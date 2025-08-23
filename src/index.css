@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(35, 40%, 94%);
+  --foreground: hsl(210, 25%, 8%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(210, 25%, 8%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(210, 25%, 8%);
+  --primary: hsl(96, 19%, 69%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(35, 68%, 63%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --muted: hsl(35, 15%, 95%);
+  --muted-foreground: hsl(210, 25%, 45%);
+  --accent: hsl(96, 19%, 69%);
+  --accent-foreground: hsl(210, 25%, 8%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(35, 20%, 85%);
+  --input: hsl(35, 20%, 92%);
+  --ring: hsl(96, 19%, 69%);
+  --chart-1: hsl(96, 19%, 69%);
+  --chart-2: hsl(35, 68%, 63%);
+  --chart-3: hsl(220, 70%, 50%);
+  --chart-4: hsl(280, 65%, 60%);
+  --chart-5: hsl(340, 75%, 55%);
+  --sidebar: hsl(0, 0%, 100%);
+  --sidebar-foreground: hsl(210, 25%, 8%);
+  --sidebar-primary: hsl(96, 19%, 69%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(35, 15%, 95%);
+  --sidebar-accent-foreground: hsl(96, 19%, 69%);
+  --sidebar-border: hsl(35, 20%, 85%);
+  --sidebar-ring: hsl(96, 19%, 69%);
+  --font-sans: 'Poppins', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 1.5rem;
+  
+  /* Custom pastel colors */
+  --pastel-beige: hsl(35, 40%, 94%);
+  --sage-green: hsl(96, 19%, 69%);
+  --soft-orange: hsl(35, 68%, 63%);
+  --soft-gray: hsl(0, 0%, 97%);
+  
+  /* Neumorphic shadows */
+  --shadow-neumorphic: 20px 20px 60px hsl(35, 30%, 80%), -20px -20px 60px hsl(0, 0%, 100%);
+  --shadow-neumorphic-inset: inset 20px 20px 60px hsl(35, 30%, 80%), inset -20px -20px 60px hsl(0, 0%, 100%);
+  --shadow-soft: 0 10px 25px hsla(0, 0%, 0%, 0.1);
+  --shadow-soft-hover: 0 15px 35px hsla(0, 0%, 0%, 0.15);
+}
+
+.dark {
+  --background: hsl(210, 25%, 8%);
+  --foreground: hsl(0, 0%, 95%);
+  --card: hsl(210, 25%, 12%);
+  --card-foreground: hsl(0, 0%, 95%);
+  --popover: hsl(210, 25%, 12%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --primary: hsl(96, 19%, 69%);
+  --primary-foreground: hsl(210, 25%, 8%);
+  --secondary: hsl(35, 68%, 63%);
+  --secondary-foreground: hsl(210, 25%, 8%);
+  --muted: hsl(210, 25%, 15%);
+  --muted-foreground: hsl(210, 10%, 60%);
+  --accent: hsl(96, 19%, 69%);
+  --accent-foreground: hsl(210, 25%, 8%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 25%, 20%);
+  --input: hsl(210, 25%, 18%);
+  --ring: hsl(96, 19%, 69%);
+  --sidebar: hsl(210, 25%, 12%);
+  --sidebar-foreground: hsl(0, 0%, 95%);
+  --sidebar-primary: hsl(96, 19%, 69%);
+  --sidebar-primary-foreground: hsl(210, 25%, 8%);
+  --sidebar-accent: hsl(210, 25%, 15%);
+  --sidebar-accent-foreground: hsl(96, 19%, 69%);
+  --sidebar-border: hsl(210, 25%, 20%);
+  --sidebar-ring: hsl(96, 19%, 69%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+@layer utilities {
+  .neumorphic {
+    box-shadow: var(--shadow-neumorphic);
+  }
+  
+  .neumorphic-inset {
+    box-shadow: var(--shadow-neumorphic-inset);
+  }
+  
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-soft-hover {
+    box-shadow: var(--shadow-soft-hover);
+  }
+  
+  .glassmorphic {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .gradient-pastel {
+    background: linear-gradient(135deg, var(--sage-green) 0%, var(--soft-orange) 100%);
+  }
+}
