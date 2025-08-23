@@ -35,6 +35,21 @@ function Router() {
           <Notes />
         </ProtectedRoute>
       </Route>
+      <Route path="/planner">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/forum">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
       <Route path="/admin">
         <ProtectedRoute adminOnly>
           <Admin />
