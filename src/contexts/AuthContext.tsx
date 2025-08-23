@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { 
   User, 
   signInWithEmailAndPassword, 
@@ -26,6 +26,7 @@ interface AuthContextType {
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  authLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -46,38 +47,68 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Memoized fetchUserData function
+  const fetchUserData = useCallback(async (uid: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        setUserData(userDoc.data() as UserData);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    await fetchUserData(result.user.uid);
+    try {
+      setAuthLoading(true);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await fetchUserData(result.user.uid);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const register = async (email: string, password: string, displayName: string) => {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(result.user, { displayName });
-    
-    // Create user document in Firestore
-    const newUserData: UserData = {
-      uid: result.user.uid,
-      email,
-      displayName,
-      role: 'student',
-      createdAt: new Date(),
-    };
-    
-    await setDoc(doc(db, 'users', result.user.uid), newUserData);
-    setUserData(newUserData);
+    try {
+      setAuthLoading(true);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(result.user, { displayName });
+      
+      // Create user document in Firestore
+      const newUserData: UserData = {
+        uid: result.user.uid,
+        email,
+        displayName,
+        role: 'student',
+        createdAt: new Date(),
+      };
+      
+      await setDoc(doc(db, 'users', result.user.uid), newUserData);
+      setUserData(newUserData);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const logout = async () => {
-    await signOut(auth);
-    setUserData(null);
-  };
-
-  const fetchUserData = async (uid: string) => {
-    const userDoc = await getDoc(doc(db, 'users', uid));
-    if (userDoc.exists()) {
-      setUserData(userDoc.data() as UserData);
+    try {
+      setAuthLoading(true);
+      await signOut(auth);
+      setUserData(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -93,7 +124,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     return unsubscribe;
-  }, []);
+  }, [fetchUserData]);
 
   const value: AuthContextType = {
     user,
@@ -101,8 +132,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     login,
     register,
     logout,
-    loading
+    loading,
+    authLoading,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
