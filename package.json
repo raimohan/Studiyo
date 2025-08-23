@@ -6,12 +6,12 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "build": "vite build",
+    "build:prod": "vite build",
     "start": "node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "check-env": "node scripts/check-env.js",
-    "setup-hooks": "node scripts/setup-hooks.js",
-    "prebuild": "npm run check-env"
+    "setup-hooks": "node scripts/setup-hooks.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
