@@ -3,9 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, CloudUpload, Download, Share, MoreVertical } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, Plus, CloudUpload, Download, Share, MoreVertical, Edit, Trash2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, addDoc, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadToCloudinary } from "@/lib/cloudinary";
@@ -16,6 +20,7 @@ interface Note {
   title: string;
   description: string;
   subject: string;
+  category?: string;
   fileUrl?: string;
   authorId: string;
   authorName: string;
@@ -29,10 +34,21 @@ export default function Notes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [newNote, setNewNote] = useState({
+    title: "",
+    description: "",
+    subject: "",
+    category: "",
+    isPublic: false
+  });
   const { userData } = useAuth();
   const { toast } = useToast();
 
   const subjects = ["All Subjects", "Computer Science", "Mathematics", "Physics", "English", "Chemistry", "Biology"];
+  const categories = ["Lecture Notes", "Assignment", "Study Guide", "Reference", "Project", "Other"];
 
   useEffect(() => {
     fetchNotes();
