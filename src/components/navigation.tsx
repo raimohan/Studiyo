@@ -67,9 +67,9 @@ export default function Navigation() {
               <Link href="/profile">
                 <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                    {userData?.profilePicture ? (
+                    {(userData?.profilePicture || userData?.photoURL) ? (
                       <img 
-                        src={userData.profilePicture} 
+                        src={userData.profilePicture || userData.photoURL} 
                         alt="Profile" 
                         className="w-full h-full object-cover" 
                       />
