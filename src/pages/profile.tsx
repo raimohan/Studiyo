@@ -39,9 +39,21 @@ export default function Profile() {
 
   const onAvatarChange = async (file?: File) => {
     if (!file || !userData) return;
-    const url = await uploadToCloudinary(file, 'avatars');
-    setPhotoURL(url);
-    await updateDoc(doc(db, 'users', userData.uid), { photoURL: url });
+    
+    try {
+      setSaving(true);
+      const url = await uploadToCloudinary(file, 'avatars');
+      setPhotoURL(url);
+      await updateDoc(doc(db, 'users', userData.uid), { photoURL: url });
+      
+      // Also update the auth context if needed
+      window.location.reload(); // Simple way to refresh user data
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      alert('Failed to upload profile picture. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
