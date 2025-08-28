@@ -12,6 +12,8 @@ import Chat from "@/pages/chat";
 import Notes from "@/pages/notes";
 import Admin from "@/pages/admin";
 import Auth from "@/pages/auth";
+import Profile from "@/pages/profile";
+import Forum from "@/pages/forum";
 import Navigation from "@/components/navigation";
 import AIAssistant from "@/components/ai-assistant";
 
@@ -42,12 +44,12 @@ function Router() {
       </Route>
       <Route path="/forum">
         <ProtectedRoute>
-          <Dashboard />
+          <Forum />
         </ProtectedRoute>
       </Route>
       <Route path="/profile">
         <ProtectedRoute>
-          <Dashboard />
+          <Profile />
         </ProtectedRoute>
       </Route>
       <Route path="/admin">
