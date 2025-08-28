@@ -59,11 +59,47 @@ function AuthRedirect() {
   return <Auth />;
 }
 
+function StaticRouteRedirect({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-pastel-beige flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-green mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (user) {
+    return <Redirect to="/dashboard" />;
+  }
+  
+  return <>{children}</>;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingRedirect} />
       <Route path="/auth" component={AuthRedirect} />
+      <Route path="/about">
+        <StaticRouteRedirect>
+          <Landing />
+        </StaticRouteRedirect>
+      </Route>
+      <Route path="/contact">
+        <StaticRouteRedirect>
+          <Landing />
+        </StaticRouteRedirect>
+      </Route>
+      <Route path="/features">
+        <StaticRouteRedirect>
+          <Landing />
+        </StaticRouteRedirect>
+      </Route>
       <Route path="/dashboard">
         <ProtectedRoute>
           <Dashboard />
