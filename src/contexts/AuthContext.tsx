@@ -54,7 +54,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
-        setUserData(userDoc.data() as UserData);
+        const data = userDoc.data() as UserData;
+        // Ensure we get the latest profile picture
+        setUserData({
+          ...data,
+          profilePicture: data.profilePicture || data.photoURL
+        });
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
