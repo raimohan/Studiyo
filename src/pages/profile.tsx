@@ -44,7 +44,12 @@ export default function Profile() {
       setSaving(true);
       const url = await uploadToCloudinary(file, 'avatars');
       setPhotoURL(url);
-      await updateDoc(doc(db, 'users', userData.uid), { photoURL: url });
+      
+      // Update both photoURL and profilePicture fields for consistency
+      await updateDoc(doc(db, 'users', userData.uid), { 
+        photoURL: url,
+        profilePicture: url 
+      });
       
       // Also update the auth context if needed
       window.location.reload(); // Simple way to refresh user data
