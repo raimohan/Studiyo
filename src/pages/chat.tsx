@@ -1,95 +1,144 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Paperclip, Smile, Send, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 
 interface Message {
   id: string;
   content: string;
-  sender: string;
-  timestamp: string;
-  avatar: string;
-  isUser: boolean;
+  senderId: string;
+  senderName: string;
+  createdAt: any;
 }
 
 interface ChatConversation {
   id: string;
-  name: string;
-  lastMessage: string;
-  timestamp: string;
-  avatar: string;
-  isActive?: boolean;
+  participants: string[];
+  participantNames: string[];
+  lastMessage?: string;
+  updatedAt?: any;
+}
+
+interface ChatUser {
+  uid: string;
+  displayName: string;
+  email: string;
 }
 
 export default function Chat() {
+  const { userData } = useAuth();
+  const currentUserId = userData?.uid;
+  const currentUserName = userData?.displayName || "You";
+
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [users, setUsers] = useState<ChatUser[]>([]);
 
-  // Sample users for search (replace with real user data)
-  const sampleUsers = [
-    { id: "1", name: "John Doe", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50" },
-    { id: "2", name: "Sarah Wilson", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50" },
-    { id: "3", name: "Mike Johnson", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50" },
-    { id: "4", name: "Emma Davis", avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50" },
-  ];
-
-  const filteredUsers = sampleUsers.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const startNewChat = (user: { id: string; name: string; avatar: string }) => {
-    const newConversation: ChatConversation = {
-      id: user.id,
-      name: user.name,
-      lastMessage: "New conversation started",
-      timestamp: "now",
-      avatar: user.avatar,
-      isActive: true,
+  // Load users (excluding self)
+  useEffect(() => {
+    if (!currentUserId) return;
+    const load = async () => {
+      const snap = await getDocs(collection(db, "users"));
+      const list = snap.docs
+        .map((d) => ({ uid: d.id, ...(d.data() as any) }))
+        .filter((u) => u.uid !== currentUserId) as ChatUser[];
+      setUsers(list);
     };
+    load();
+  }, [currentUserId]);
 
-    // Remove any existing conversation with this user
-    setConversations(prev => prev.filter(conv => conv.id !== user.id));
-    
-    // Add new conversation at the top
-    setConversations(prev => [newConversation, ...prev]);
-    
-    // Select this conversation
-    setSelectedChat(user.id);
-    
-    // Clear messages for new chat
-    setMessages([]);
-    
-    // Clear search
+  // Subscribe to conversations where current user is a participant
+  useEffect(() => {
+    if (!currentUserId) return;
+    const q = query(
+      collection(db, "conversations"),
+      where("participants", "array-contains", currentUserId),
+      orderBy("updatedAt", "desc")
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setConversations(
+        snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as ChatConversation[]
+      );
+    });
+    return () => unsub();
+  }, [currentUserId]);
+
+  // Subscribe to selected conversation messages
+  useEffect(() => {
+    if (!selectedChat) {
+      setMessages([]);
+      return;
+    }
+    const q = query(
+      collection(db, "conversations", selectedChat, "messages"),
+      orderBy("createdAt", "asc")
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setMessages(
+        snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Message[]
+      );
+    });
+    return () => unsub();
+  }, [selectedChat]);
+
+  const filteredUsers = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return users.filter((u) => u.displayName?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q));
+  }, [users, searchQuery]);
+
+  const getConversationDisplay = (conv: ChatConversation) => {
+    const idx = conv.participants.findIndex((id) => id !== currentUserId);
+    const name = conv.participantNames?.[idx] || "Conversation";
+    return name;
+  };
+
+  const findExistingConversationWith = (otherUserId: string) => {
+    return conversations.find(
+      (c) => c.participants.length === 2 && c.participants.includes(otherUserId) && c.participants.includes(currentUserId!)
+    );
+  };
+
+  const startNewChat = async (user: ChatUser) => {
+    if (!currentUserId) return;
+    const existing = findExistingConversationWith(user.uid);
+    if (existing) {
+      setSelectedChat(existing.id);
+      setSearchQuery("");
+      return;
+    }
+    const docRef = await addDoc(collection(db, "conversations"), {
+      participants: [currentUserId, user.uid],
+      participantNames: [currentUserName, user.displayName],
+      lastMessage: "New conversation started",
+      updatedAt: serverTimestamp(),
+    });
+    setSelectedChat(docRef.id);
     setSearchQuery("");
   };
 
-  const sendMessage = () => {
-    if (!messageInput.trim() || !selectedChat) return;
-    
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content: messageInput,
-      sender: "You",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40",
-      isUser: true,
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    
-    // Update conversation last message
-    setConversations(prev => prev.map(conv => 
-      conv.id === selectedChat 
-        ? { ...conv, lastMessage: messageInput, timestamp: "now" }
-        : conv
-    ));
-    
+  const sendMessage = async () => {
+    if (!messageInput.trim() || !selectedChat || !currentUserId) return;
+    const content = messageInput.trim();
     setMessageInput("");
+    const msgCol = collection(db, "conversations", selectedChat, "messages");
+    await addDoc(msgCol, {
+      content,
+      senderId: currentUserId,
+      senderName: currentUserName,
+      createdAt: serverTimestamp(),
+    });
+    await updateDoc(doc(db, "conversations", selectedChat), {
+      lastMessage: content,
+      updatedAt: serverTimestamp(),
+    });
   };
 
   return (
@@ -115,7 +164,8 @@ export default function Chat() {
                 </motion.div>
               </div>
 
-              {/* Search Users */}
+              {/* Search Users */
+              }
               <div className="mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -128,23 +178,22 @@ export default function Chat() {
                 </div>
               </div>
 
-              {/* User Search Results */}
+              {/* User Search Results */
+              }
               {searchQuery && (
                 <div className="mb-4">
                   <h3 className="text-sm font-medium text-gray-600 mb-2">Search Results:</h3>
                   <div className="space-y-2">
                     {filteredUsers.map(user => (
                       <div
-                        key={user.id}
+                        key={user.uid}
                         className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
                         onClick={() => startNewChat(user)}
                       >
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-8 h-8 rounded-full mr-3"
-                        />
-                        <span className="text-sm font-medium">{user.name}</span>
+                        <div className="w-8 h-8 rounded-full mr-3 bg-gray-200 flex items-center justify-center">
+                          <User className="w-4 h-4 text-gray-500" />
+                        </div>
+                        <span className="text-sm font-medium">{user.displayName}</span>
                       </div>
                     ))}
                   </div>
@@ -163,22 +212,17 @@ export default function Chat() {
                     }`}
                     onClick={() => setSelectedChat(conversation.id)}
                   >
-                    <img
-                      src={conversation.avatar}
-                      alt={conversation.name}
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
+                    <div className="w-10 h-10 rounded-full mr-3 bg-gray-200 flex items-center justify-center">
+                      <User className="w-5 h-5 text-gray-500" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-medium text-gray-800 truncate">
-                        {conversation.name}
+                        {getConversationDisplay(conversation)}
                       </h3>
                       <p className="text-xs text-gray-500 truncate">
                         {conversation.lastMessage}
                       </p>
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {conversation.timestamp}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -199,13 +243,11 @@ export default function Chat() {
                   {/* Chat Header */}
                   <div className="border-b border-gray-200 p-4">
                     <div className="flex items-center">
-                      <img
-                        src={conversations.find(c => c.id === selectedChat)?.avatar}
-                        alt="Chat"
-                        className="w-8 h-8 rounded-full mr-3"
-                      />
+                      <div className="w-8 h-8 rounded-full mr-3 bg-gray-200 flex items-center justify-center">
+                        <User className="w-4 h-4 text-gray-500" />
+                      </div>
                       <h3 className="font-medium">
-                        {conversations.find(c => c.id === selectedChat)?.name}
+                        {getConversationDisplay(conversations.find(c => c.id === selectedChat)!)}
                       </h3>
                     </div>
                   </div>
@@ -221,25 +263,21 @@ export default function Chat() {
                       messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
+                          className={`flex ${message.senderId === currentUserId ? "justify-end" : "justify-start"}`}
                         >
-                          <div className={`flex items-end max-w-xs ${message.isUser ? "flex-row-reverse" : ""}`}>
-                            <img
-                              src={message.avatar}
-                              alt={message.sender}
-                              className="w-6 h-6 rounded-full mx-2"
-                            />
+                          <div className={`flex items-end max-w-xs ${message.senderId === currentUserId ? "flex-row-reverse" : ""}`}>
+                            <div className="w-6 h-6 rounded-full mx-2 bg-gray-200 flex items-center justify-center">
+                              <User className="w-3 h-3 text-gray-500" />
+                            </div>
                             <div
                               className={`px-3 py-2 rounded-lg ${
-                                message.isUser
+                                message.senderId === currentUserId
                                   ? "bg-sage-green text-white"
                                   : "bg-gray-100 text-gray-800"
                               }`}
                             >
                               <p className="text-sm">{message.content}</p>
-                              <p className="text-xs opacity-70 mt-1">
-                                {message.timestamp}
-                              </p>
+                              <p className="text-xs opacity-70 mt-1">{message.senderName}</p>
                             </div>
                           </div>
                         </div>
