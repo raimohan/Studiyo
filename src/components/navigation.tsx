@@ -64,7 +64,24 @@ export default function Navigation() {
           ))}
           {user ? (
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {userData?.displayName}</span>
+              <Link href="/profile">
+                <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                    {userData?.profilePicture ? (
+                      <img 
+                        src={userData.profilePicture} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-500">
+                        {userData?.displayName?.charAt(0)?.toUpperCase() || 'U'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-gray-700">Welcome, {userData?.displayName}</span>
+                </div>
+              </Link>
               <motion.div whileHover={{ y: -2 }} whileTap={{ y: 0 }}>
                 <Button 
                   onClick={handleLogout}
