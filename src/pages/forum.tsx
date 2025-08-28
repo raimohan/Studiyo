@@ -59,11 +59,57 @@ export default function Forum() {
   };
 
   const toggleBold = () => {
-    setContent((c) => c + "**bold** ");
+    const textarea = document.querySelector('textarea[placeholder*="Write your post"]') as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = textarea.value.substring(start, end);
+      const beforeText = textarea.value.substring(0, start);
+      const afterText = textarea.value.substring(end);
+      
+      if (selectedText) {
+        const newContent = beforeText + `**${selectedText}**` + afterText;
+        setContent(newContent);
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(start + 2, end + 2);
+        }, 10);
+      } else {
+        const newContent = content + "**bold text**";
+        setContent(newContent);
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(newContent.length - 11, newContent.length - 2);
+        }, 10);
+      }
+    }
   };
 
   const toggleItalic = () => {
-    setContent((c) => c + "*italic* ");
+    const textarea = document.querySelector('textarea[placeholder*="Write your post"]') as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = textarea.value.substring(start, end);
+      const beforeText = textarea.value.substring(0, start);
+      const afterText = textarea.value.substring(end);
+      
+      if (selectedText) {
+        const newContent = beforeText + `*${selectedText}*` + afterText;
+        setContent(newContent);
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(start + 1, end + 1);
+        }, 10);
+      } else {
+        const newContent = content + "*italic text*";
+        setContent(newContent);
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(newContent.length - 12, newContent.length - 1);
+        }, 10);
+      }
+    }
   };
 
   const startEdit = (t: Thread) => {
@@ -89,6 +135,13 @@ export default function Forum() {
 
   const removeThread = async (id: string) => {
     await deleteDoc(doc(db, 'threads', id));
+  };
+
+  const renderMarkdown = (text: string) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
   };
 
   return (
